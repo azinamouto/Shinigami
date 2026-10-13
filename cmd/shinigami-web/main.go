@@ -214,18 +214,8 @@ func main() {
 	mux.HandleFunc("/api/scan", a.scan)
 	mux.HandleFunc("/api/latest", a.latestScan)
 	mux.HandleFunc("/api/export", a.export)
-	// Explicitly deny cross-origin browser requests. Vite forwards same-origin /api requests.
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("Referrer-Policy", "no-referrer")
-		origin := r.Header.Get("Origin")
-		if origin != "" && origin != "http://127.0.0.1:5173" && origin != "http://localhost:5173" {
-			a.fail(w, 403, "cross-origin requests are not allowed")
-			return
-		}
-		mux.ServeHTTP(w, r)
-	})
+	// Restrict access to the local UI and loopback host.
+	handler := secureLocalAPI(a, mux)
 	ln, err := net.Listen("tcp", "127.0.0.1:8787")
 	if err != nil {
 		log.Fatal(err)
