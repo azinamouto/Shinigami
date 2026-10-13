@@ -56,3 +56,21 @@ go build ./cmd/shinigami
 ## Security
 
 Only scan code you own or are authorized to assess. Do not treat a zero-findings result as proof of security. Please avoid posting sensitive repository contents in public issues.
+
+## Experimental Gitleaks adapter (v0.2 branch)
+
+Install a compatible Gitleaks v8 binary separately and add it to `PATH`.
+Shinigami never installs or executes scanned repository dependencies.
+
+```bash
+go run ./cmd/shinigami scan -scanner gitleaks ./your-project
+go run ./cmd/shinigami scan -scanner all -format json ./your-project
+```
+
+The default scanner remains `native`. Gitleaks `dir` scans the current
+working tree, not Git history. Missing Gitleaks or scanner errors cause a
+nonzero exit rather than a false clean result. Raw matches and secret values
+are discarded, but **filenames and rule metadata may still be sensitive**.
+Review reports before sharing. The adapter has not been validated against an
+actual installed Gitleaks binary in CI; fake-executable tests cover its
+subprocess contract. This is not a complete security audit.
