@@ -10,6 +10,7 @@ import (
 	"github.com/azinamouto/shinigami/internal/adapters/gitleaks"
 	"github.com/azinamouto/shinigami/internal/adapters/osv"
 	"github.com/azinamouto/shinigami/internal/scanner"
+	"github.com/azinamouto/shinigami/internal/report/sarif"
 	"os"
 	"path/filepath"
 )
@@ -30,11 +31,11 @@ func main() {
 		}
 	case "scan":
 		cmd := flag.NewFlagSet("scan", flag.ExitOnError)
-		format := cmd.String("format", "terminal", "terminal or json")
+		format := cmd.String("format", "terminal", "terminal, json, or sarif")
 		engine := cmd.String("scanner", "native", "native, gitleaks, osv, or all")
 		failOn := cmd.Bool("fail-on-findings", false, "exit 1 if any findings are detected")
 		cmd.Parse(os.Args[2:])
-		if *format != "terminal" && *format != "json" {
+		if *format != "terminal" && *format != "json" && *format != "sarif" {
 			fmt.Fprintln(os.Stderr, "unsupported format")
 			os.Exit(2)
 		}
@@ -79,7 +80,14 @@ func main() {
 			fmt.Fprintln(os.Stderr, "scan failed:", err)
 			os.Exit(2)
 		}
-		if *format == "json" {
+		if *format == "sarif" {
+			data, encodeErr := sarif.Encode(findings, version)
+			if encodeErr != nil {
+				fmt.Fprintln(os.Stderr, "SARIF encoding failed:", encodeErr)
+				os.Exit(2)
+			}
+			fmt.Println(string(data))
+		} else if *format == "json" {
 			out := struct {
 				Version  string            `json:"version"`
 				Findings []scanner.Finding `json:"findings"`
